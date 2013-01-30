@@ -1,4 +1,4 @@
 lazarus-thumbviewer
 ===================
 
-Thumbnail viewer for Lazarus Freepascal
+Thumbnail Viewer Component for Lazarus Freepascal
