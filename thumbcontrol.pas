@@ -1,6 +1,7 @@
 unit thumbcontrol;
 
 //22.6.2010 Theo
+//Git push 30.1.2013
 
 {$MODE objfpc}{$H+}
 
@@ -923,4 +924,4 @@ initialization
 finalization
   frame.free;
 
-end.
+end.
