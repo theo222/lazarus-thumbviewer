@@ -119,7 +119,7 @@ var CSImg: TCriticalSection;
 
 implementation
 
-uses Math;
+uses Math, LazUTF8;
 
 var CS: TCriticalSection;
 

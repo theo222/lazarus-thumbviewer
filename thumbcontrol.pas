@@ -177,7 +177,7 @@ procedure Register;
 implementation
 
 uses LCLType, Forms, Controls, fontfinder,
-fpreadgif,FPReadPSD,FPReadPCX,FPReadTGA; //just register them
+fpreadgif,FPReadPSD,FPReadPCX,FPReadTGA, LazFileUtils, LazUTF8; //just register them
 
 
 function ShortenString(AValue: string; Width: integer; ACanvas: TCanvas): string;
@@ -503,7 +503,7 @@ begin
     OffsetRect(aRect, HScrollPosition, VScrollPosition);
     if not clipped then fMngr.LoadRect(ARect);
 
-    Canvas.Brush.color :=  $F1F1F1;
+    Canvas.Brush.color := $F1F1F1;
 
     for i := 0 to fmngr.List.Count - 1 do
     begin
@@ -582,7 +582,7 @@ begin
   sl.Delimiter := ';';
   for i := 0 to ImageHandlers.Count - 1 do
   begin
-    sl.DelimitedText := ImageHandlers.Extentions[ImageHandlers.TypeNames[i]];
+    sl.DelimitedText := ImageHandlers.Extensions[ImageHandlers.TypeNames[i]];
     for j := 0 to sl.Count - 1 do Result := Result + '*.' + sl[j] + ';';
   end;
   sl.free;
