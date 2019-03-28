@@ -469,7 +469,7 @@ initialization
   for i:=0 to Om.Count-1 do
     begin
       tn:=Om.TypeNames[i];
-      ext:=Om.Extentions[tn];
+      ext:=Om.Extensions[tn];
       ir:=Om.ImageReader[tn];
       iw:=Om.ImageWriter[tn];
       if tn<>'JPEG Graphics'then if ir<>nil then ImageHandlers.RegisterImageReader(tn,ext,ir);
