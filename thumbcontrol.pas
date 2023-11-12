@@ -8,9 +8,9 @@ unit thumbcontrol;
 interface
 
 uses
-  Classes, SysUtils, scrollingcontrol, ThreadedImageLoader, types,
+  Classes, SysUtils, Controls, scrollingcontrol, ThreadedImageLoader,
   Graphics, fpImage, FPReadJPEGthumb, fpthumbresize, LResources,
-  FileUtil, Dialogs, GraphType, LCLIntf;
+  FileUtil, Dialogs, GraphType, LCLType, LCLIntf, Types;
 
 
 type
@@ -79,9 +79,12 @@ type
     procedure KeyUp(var Key: Word; Shift: TShiftState); override;
     procedure UpdateDims;
     procedure Arrange;
+    procedure DoAutoAdjustLayout(const AMode: TLayoutAdjustmentPolicy;
+      const AXProportion, AYProportion: Double); override;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
+    function GetDefaultColor(const DefaultColorType: TDefaultColorType): TColor; override;
     {:Use this function when you need the item from control coordinates (Mouse etc.)}
     function ItemFromPoint(APoint: TPoint): TThreadedImage;
     procedure ScrollIntoView;
@@ -176,9 +179,8 @@ procedure Register;
 
 implementation
 
-uses LCLType, Forms, Controls, fontfinder,
+uses Forms, fontfinder,
 fpreadgif,FPReadPSD,FPReadPCX,FPReadTGA, LazFileUtils, LazUTF8; //just register them
-
 
 function ShortenString(AValue: string; Width: integer; ACanvas: TCanvas): string;
 var len, slen: integer;
@@ -297,7 +299,7 @@ begin
   FShowPictureFrame := AValue;
   if FShowPictureFrame then
   begin
-    fPictureFrameBorder := StockBorderWidth;
+    fPictureFrameBorder := Scale96ToFont(StockBorderWidth);
     if FShowCaptions then fTextExtraHeight := 0;
   end else
   begin
@@ -498,7 +500,10 @@ begin
       Clipped := false;
     end;
 
-    Canvas.Brush.Color := clWhite;
+    if Color = clDefault then
+      Canvas.Brush.Color := GetDefaultColor(dctBrush)
+    else
+      Canvas.Brush.Color := Color;
     Canvas.FillRect(ARect);
     OffsetRect(aRect, HScrollPosition, VScrollPosition);
     if not clipped then fMngr.LoadRect(ARect);
@@ -556,8 +561,8 @@ begin
             Canvas.Brush.Color := clBlack;
             Canvas.FillRect(Cim.Left - HScrollPosition + tlen - 1,
               Cim.Height + Cim.Top - VScrollPosition + 1,
-              Cim.Left - HScrollPosition + 2 + tlen + Canvas.TextWidth(UrlStr),
-              Cim.Height + Cim.Top - VScrollPosition + 10);
+              Cim.Left - HScrollPosition + Scale96ToFont(2) + tlen + Canvas.TextWidth(UrlStr),
+              Cim.Height + Cim.Top - VScrollPosition + Scale96ToFont(10));
             if i = fMngr.ActiveIndex then Canvas.Font.color := clWhite else Canvas.Font.color := $448FA2;
           end;
           Canvas.Brush.Style := bsClear;
@@ -635,7 +640,7 @@ begin
   if (FArrangeStyle = LsHorizAutoSize) or ((FArrangeStyle = LsAutoSize) and (FIls = IlsHorz)) then
   begin
     aDim := fThumbHeight;
-    fThumbHeight := ClientHeight - fPictureFrameBorder * 2 - fTextExtraHeight - 2 * fTopOffset - 20;
+    fThumbHeight := ClientHeight - fPictureFrameBorder * 2 - fTextExtraHeight - 2 * fTopOffset - Scale96ToFont(20);
     fThumbWidth := Round(fThumbHeight / fUserThumbHeight * fUserThumbWidth);
     FIls := IlsHorz;
     if ADim <> fThumbHeight then
@@ -648,7 +653,7 @@ begin
   if (FArrangeStyle = LsVertAutoSize) or ((FArrangeStyle = LsAutoSize) and (FIls = IlsVert)) then
   begin
     aDim := fThumbWidth;
-    fThumbWidth := ClientWidth - fPictureFrameBorder * 2 - 2 * fLeftOffset - 20;
+    fThumbWidth := ClientWidth - fPictureFrameBorder * 2 - 2 * fLeftOffset - Scale96ToFont(20);
     fThumbHeight := Round(fThumbWidth / fUserThumbWidth * fUserThumbHeight);
     FIls := IlsVert;
     if ADim <> fThumbWidth then
@@ -769,6 +774,7 @@ begin
   LargeStep := fThumbWidth * 4;
 
   fFrame := TBitmap.Create;
+  fFrame.PixelFormat := pf32Bit;
 
   fDirectory := GetUserDir;
 end;
@@ -779,6 +785,31 @@ begin
   fMngr.free;
   fFrame.free;
   inherited Destroy;
+end;
+
+procedure TThumbControl.DoAutoAdjustLayout(const AMode: TLayoutAdjustmentPolicy;
+  const AXProportion, AYProportion: Double);
+begin
+  inherited;
+  if AMode in [lapAutoAdjustWithoutHorizontalScrolling, lapAutoAdjustForDPI] then
+  begin
+    FUserThumbWidth := round(FUserThumbWidth * AXProportion);
+    FUserThumbHeight := round(FUserThumbHeight * AYProportion);
+    FThumbDist := round(FThumbDist * AXProportion);
+    fTextExtraHeight := round(FTextExtraHeight * AYProportion);
+    fLeftOffset := round(fLeftOffset * AXProportion);
+    fTopOffset := round(fTopOffset * AYProportion);
+  //  FPictureFrameBorder := round(FPictureFrameBorder * AXProportion);
+    Arrange;
+  end;
+end;
+
+function TThumbControl.GetDefaultColor(const DefaultColorType: TDefaultColorType): TColor;
+begin
+  if DefaultColorType = dctBrush then
+    Result := clWindow
+  else
+    Result := clWindowText;
 end;
 
 procedure TThumbControl.UpdateDims;
@@ -920,6 +951,7 @@ initialization
 {$I images.lrs}
   frame := TPortableNetworkGraphic.create;
   frame.LoadFromLazarusResource('framecropab');
+  //frame.saveToFile('framecropab.png');
 
 finalization
   frame.free;
